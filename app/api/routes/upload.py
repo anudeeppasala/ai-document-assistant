@@ -4,6 +4,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.services.chunker import chunk_text
 from app.services.document_loader import extract_text_from_pdf
+from app.services.vector_store import reset_collection, store_chunks
 
 router = APIRouter()
 
@@ -31,11 +32,23 @@ async def upload_file(file: UploadFile = File(...)):
 
     chunks = chunk_text(extracted_text)
 
+    if not chunks:
+        raise HTTPException(status_code=400, detail="Chunking failed")
+
+    try:
+        reset_collection()
+        store_chunks(chunks, file.filename)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Vector storage failed: {str(exc)}"
+        ) from exc
+
     return {
         "filename": file.filename,
-        "message": "File uploaded, text extracted, and chunking completed successfully",
+        "message": "File uploaded, text extracted, chunked, and full document stored in vector DB successfully",
         "text_length": len(extracted_text),
         "chunk_count": len(chunks),
         "preview": extracted_text[:1000],
-        "first_chunk_preview": chunks[0][:500] if chunks else ""
+        "first_chunk_preview": chunks[0][:500]
     }
