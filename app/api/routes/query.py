@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.models.request_models import QueryRequest
-from app.services.rag_service import retrieve_relevant_chunks
+from app.services.rag_service import generate_answer_from_chunks, retrieve_relevant_chunks
 
 router = APIRouter()
 
@@ -13,10 +13,28 @@ def query_docs(request: QueryRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
-    matches = retrieve_relevant_chunks(question)
+    try:
+        matches = retrieve_relevant_chunks(question)
+        answer = generate_answer_from_chunks(question, matches)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Answer generation failed: {str(exc)}"
+        ) from exc
+
+    cleaned_matches = [
+        {
+            "source_file": match["source_file"],
+            "chunk_index": match["chunk_index"],
+            "distance": round(match["distance"], 4),
+            "text_preview": match["text"][:300]
+        }
+        for match in matches
+    ]
 
     return {
         "question": question,
-        "match_count": len(matches),
-        "matches": matches
+        "answer": answer,
+        "match_count": len(cleaned_matches),
+        "sources": cleaned_matches
     }
