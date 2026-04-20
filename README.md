@@ -1,73 +1,146 @@
 # AI Document Assistant
 
-AI Document Assistant is a Python-based RAG application that ingests PDF documents, indexes them for semantic search, and answers user questions using grounded document context.
+Production-style RAG application for PDF question answering with:
 
-## Features
+- FastAPI backend
+- Streamlit frontend
+- Chroma vector store
+- Online (Gemini) and offline fallback runtime modes
+- Evaluation harness and integration tests
 
-- FastAPI backend with modular project structure
-- PDF upload and validation
-- PDF text extraction using `pypdf`
-- Text chunking with overlap
-- Embedding generation using Gemini
-- Vector storage with ChromaDB
-- Semantic retrieval over indexed document chunks
-- Grounded answer generation using retrieved context only
-- Swagger/OpenAPI docs via FastAPI
+## Highlights for recruiters
+
+- End-to-end full-stack implementation (upload, index, query, citations)
+- Reliability features: structured logs, request IDs, readiness checks, config validation
+- Quality controls: chunk tuning, top-k retrieval, rerank toggle, eval metrics
+- Resilience: offline mode with deterministic local fallback
+- Testability: mocked integration tests for deterministic CI behavior
 
 ## Architecture
 
-The application follows a Retrieval-Augmented Generation (RAG) workflow:
+- High-level design: [`docs/architecture.md`](docs/architecture.md)
+- Engineering tradeoffs: [`docs/engineering_decisions.md`](docs/engineering_decisions.md)
 
-1. User uploads a PDF
-2. Backend extracts text from the document
-3. Text is split into overlapping chunks
-4. Chunks are converted into embeddings
-5. Embeddings are stored in ChromaDB
-6. User submits a question
-7. Question is embedded and matched against stored chunks
-8. Relevant chunks are passed to Gemini
-9. The model generates a grounded answer using only retrieved context
+## Project structure
 
-## Tech Stack
+```text
+ai-document-assistant/
+├── app/
+│   ├── api/
+│   │   ├── main.py
+│   │   └── routes/
+│   │       ├── health.py
+│   │       ├── upload.py
+│   │       └── query.py
+│   ├── core/
+│   │   ├── config.py
+│   │   ├── logging.py
+│   │   └── errors.py
+│   ├── models/
+│   └── services/
+│       ├── providers/
+│       │   ├── online.py
+│       │   ├── offline.py
+│       │   └── factory.py
+│       ├── vector_store.py
+│       ├── rag_pipeline.py
+│       ├── chunker.py
+│       └── document_loader.py
+├── frontend/streamlit_app.py
+├── tests/
+├── eval/sample_eval_set.json
+├── scripts/
+│   ├── evaluate.py
+│   ├── run_online.sh
+│   └── run_offline.sh
+└── docker-compose.yml
+```
 
-- Python
-- FastAPI
-- Uvicorn
-- PyPDF
-- ChromaDB
-- Google Gemini API
-- Pydantic
-- Python-dotenv
-- Pytest
-
-## Project Structure
+## Quick start
 
 ```bash
-ai-document-assistant/
-│── app/
-│   │── api/
-│   │   │── routes/
-│   │   │   ├── upload.py
-│   │   │   ├── query.py
-│   │   │   └── health.py
-│   │   └── main.py
-│   │
-│   │── core/
-│   │   └── config.py
-│   │
-│   │── services/
-│   │   ├── document_loader.py
-│   │   ├── chunker.py
-│   │   ├── embedding_service.py
-│   │   ├── vector_store.py
-│   │   └── rag_service.py
-│   │
-│   │── models/
-│   │   └── request_models.py
-│
-│── tests/
-│── data/
-│── requirements.txt
-│── .env
-│── .gitignore
-│── README.md
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Run API
+
+```bash
+uvicorn app.api.main:app --reload
+```
+
+### Run frontend
+
+```bash
+streamlit run frontend/streamlit_app.py
+```
+
+## Runtime modes
+
+- `RAG_MODE=ONLINE`: Gemini embeddings and answer generation
+- `RAG_MODE=OFFLINE`: local hash embeddings + extractive answer fallback
+- `RAG_MODE=AUTO`: online if internet + API key are available, otherwise offline
+
+## Environment variables
+
+```env
+GEMINI_API_KEY=...
+RAG_MODE=AUTO
+GEMINI_CHAT_MODEL=gemini-2.5-flash
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+CHROMA_COLLECTION_NAME=document_chunks
+CHROMA_PATH=./data/chroma
+CHUNK_SIZE=700
+CHUNK_OVERLAP=120
+TOP_K_RESULTS=10
+RERANK_ENABLED=true
+MAX_CONTEXT_CHUNKS=8
+```
+
+## Health endpoints
+
+- `GET /health/`
+- `GET /health/ready`
+
+## Evaluation
+
+Run baseline retrieval/answer metrics:
+
+```bash
+python scripts/evaluate.py
+```
+
+Current baseline format:
+
+- retrieval recall@k
+- answer keyword score
+- match count per query
+
+## Tests
+
+```bash
+pytest -q
+```
+
+## Docker
+
+Online profile:
+
+```bash
+docker compose --profile online up --build
+```
+
+Offline profile:
+
+```bash
+docker compose --profile offline up --build
+```
+
+## Demo checklist (90 seconds)
+
+1. Show upload + indexing summary (pages/chunks).
+2. Ask a contract question and show answer + citations.
+3. Show health/ready output and request latency headers.
+4. Switch to offline mode and repeat query successfully.
+5. Show test and eval commands in terminal.

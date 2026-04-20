@@ -2,19 +2,23 @@ from google import genai
 
 from app.core.config import GEMINI_API_KEY
 
+
+class EmbeddingServiceError(Exception):
+    pass
+
+
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def generate_embedding(text: str) -> list[float]:
-    """
-    Generate an embedding vector for a single text input.
-    """
+    if not text.strip():
+        raise EmbeddingServiceError("Cannot generate embedding for empty text")
+
     try:
         response = client.models.embed_content(
             model="gemini-embedding-001",
             contents=text,
         )
         return response.embeddings[0].values
-
     except Exception as exc:
-        raise RuntimeError(f"Embedding generation failed: {str(exc)}") from exc
+        raise EmbeddingServiceError(f"Embedding generation failed: {exc}") from exc

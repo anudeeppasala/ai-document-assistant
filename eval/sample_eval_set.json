@@ -1,0 +1,20 @@
+[
+  {
+    "id": "lease-parties",
+    "question": "Who are the parties in the lease?",
+    "expected_keywords": ["tenant", "owner", "landlord", "resident"],
+    "expected_page_numbers": [1, 2, 3]
+  },
+  {
+    "id": "lease-address",
+    "question": "What is the property address?",
+    "expected_keywords": ["road", "aurora", "illinois", "zip"],
+    "expected_page_numbers": [1, 2]
+  },
+  {
+    "id": "lease-dates",
+    "question": "What date is the form filled out?",
+    "expected_keywords": ["date", "2025", "am", "pm"],
+    "expected_page_numbers": [1, 2]
+  }
+]

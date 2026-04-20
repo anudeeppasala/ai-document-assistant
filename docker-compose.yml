@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  api-online:
+    profiles: ["online"]
+    build: .
+    environment:
+      RAG_MODE: ONLINE
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000
+
+  api-offline:
+    profiles: ["offline"]
+    build: .
+    environment:
+      RAG_MODE: OFFLINE
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000
+
+  streamlit:
+    profiles: ["online", "offline"]
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    command: streamlit run frontend/streamlit_app.py --server.address=0.0.0.0 --server.port=8501

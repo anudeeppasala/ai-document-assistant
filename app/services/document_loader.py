@@ -2,21 +2,28 @@ from pathlib import Path
 from pypdf import PdfReader
 
 
-def extract_text_from_pdf(file_path: str) -> str:
-    """
-    Read a PDF file and return extracted text from all pages.
-    """
+class DocumentLoaderError(Exception):
+    pass
+
+
+def extract_pages_from_pdf(file_path: str) -> list[dict]:
     pdf_path = Path(file_path)
-
     if not pdf_path.exists():
-        raise FileNotFoundError(f"File not found: {file_path}")
+        raise DocumentLoaderError(f"File not found: {file_path}")
 
-    reader = PdfReader(file_path)
-    extracted_pages = []
+    try:
+        reader = PdfReader(file_path)
+        pages: list[dict] = []
+        for page_idx, page in enumerate(reader.pages, start=1):
+            page_text = page.extract_text() or ""
+            cleaned = page_text.strip()
+            if cleaned:
+                pages.append({"page_number": page_idx, "text": cleaned})
+        return pages
+    except Exception as exc:
+        raise DocumentLoaderError(f"Failed to extract text from PDF: {exc}") from exc
 
-    for page in reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            extracted_pages.append(page_text)
 
-    return "\n".join(extracted_pages).strip()
+def extract_text_from_pdf(file_path: str) -> str:
+    pages = extract_pages_from_pdf(file_path)
+    return "\n".join(page["text"] for page in pages).strip()
