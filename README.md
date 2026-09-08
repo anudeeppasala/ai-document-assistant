@@ -1,17 +1,15 @@
 # AI Document Assistant
 
-Production-style RAG application for PDF question answering with:
+Document **ingest and retrieval pipeline**: load → chunk → embed → retrieve → cited answer. Packaged as a containerized API.
 
-- FastAPI backend
-- Streamlit frontend
-- Chroma vector store
-- Online (Gemini) and offline fallback runtime modes
-- Evaluation harness and integration tests
+**In this repo:** FastAPI backend, Streamlit operator UI, Chroma, Gemini with an offline fallback, eval harness, and integration tests. This is not a deployed AWS stack.
 
-## Highlights for recruiters
+**How I would run it in production:** objects land in S3 (or Blob Storage) → ingest job on Lambda/ECS → vectors in a managed store → stateless query API behind API Gateway. Secrets in Secrets Manager / Key Vault. Streamlit is the operator console, not the product.
 
-- End-to-end full-stack implementation (upload, index, query, citations)
-- Reliability features: structured logs, request IDs, readiness checks, config validation
+## Highlights
+
+- End-to-end pipeline (upload, index, query, citations)
+- Reliability: structured logs, request IDs, readiness checks, config validation
 - Quality controls: chunk tuning, top-k retrieval, rerank toggle, eval metrics
 - Resilience: offline mode with deterministic local fallback
 - Testability: mocked integration tests for deterministic CI behavior
